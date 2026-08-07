@@ -14,6 +14,7 @@ import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as GoalsRouteImport } from './routes/goals'
 import { Route as JournalRouteImport } from './routes/journal'
+import { Route as NewTradeRouteImport } from './routes/new-trade'
 import { Route as PsychologyRouteImport } from './routes/psychology'
 import { Route as RiskRouteImport } from './routes/risk'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -43,6 +44,11 @@ const JournalRoute = JournalRouteImport.update({
   path: '/journal',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NewTradeRoute = NewTradeRouteImport.update({
+  id: '/new-trade',
+  path: '/new-trade',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PsychologyRoute = PsychologyRouteImport.update({
   id: '/psychology',
   path: '/psychology',
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof CalendarRoute
   '/goals': typeof GoalsRoute
   '/journal': typeof JournalRoute
+  '/new-trade': typeof NewTradeRoute
   '/psychology': typeof PsychologyRoute
   '/risk': typeof RiskRoute
   '/settings': typeof SettingsRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof CalendarRoute
   '/goals': typeof GoalsRoute
   '/journal': typeof JournalRoute
+  '/new-trade': typeof NewTradeRoute
   '/psychology': typeof PsychologyRoute
   '/risk': typeof RiskRoute
   '/settings': typeof SettingsRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/calendar': typeof CalendarRoute
   '/goals': typeof GoalsRoute
   '/journal': typeof JournalRoute
+  '/new-trade': typeof NewTradeRoute
   '/psychology': typeof PsychologyRoute
   '/risk': typeof RiskRoute
   '/settings': typeof SettingsRoute
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/goals'
     | '/journal'
+    | '/new-trade'
     | '/psychology'
     | '/risk'
     | '/settings'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/goals'
     | '/journal'
+    | '/new-trade'
     | '/psychology'
     | '/risk'
     | '/settings'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/goals'
     | '/journal'
+    | '/new-trade'
     | '/psychology'
     | '/risk'
     | '/settings'
@@ -129,6 +141,7 @@ export interface RootRouteChildren {
   CalendarRoute: typeof CalendarRoute
   GoalsRoute: typeof GoalsRoute
   JournalRoute: typeof JournalRoute
+  NewTradeRoute: typeof NewTradeRoute
   PsychologyRoute: typeof PsychologyRoute
   RiskRoute: typeof RiskRoute
   SettingsRoute: typeof SettingsRoute
@@ -171,6 +184,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JournalRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/new-trade': {
+      id: '/new-trade'
+      path: '/new-trade'
+      fullPath: '/new-trade'
+      preLoaderRoute: typeof NewTradeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/psychology': {
       id: '/psychology'
       path: '/psychology'
@@ -201,6 +221,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalendarRoute: CalendarRoute,
   GoalsRoute: GoalsRoute,
   JournalRoute: JournalRoute,
+  NewTradeRoute: NewTradeRoute,
   PsychologyRoute: PsychologyRoute,
   RiskRoute: RiskRoute,
   SettingsRoute: SettingsRoute,
@@ -208,13 +229,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

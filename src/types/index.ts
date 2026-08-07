@@ -1,59 +1,52 @@
-export type Direction = "LONG" | "SHORT";
-export type TradeStatus = "WIN" | "LOSS" | "BREAKEVEN" | "OPEN";
-export type Session = "London" | "New York" | "Asia" | "Sydney";
-
 export interface Trade {
   id: string;
   pair: string;
-  direction: Direction;
+  direction: 'LONG' | 'SHORT';
   entry: number;
   exit: number;
-  risk: number; // in USD
+  risk: number;
   rr: number;
-  profit: number; // in USD
-  session: Session;
+  profit: number;
+  session: string;
   strategy: string;
-  date: string; // ISO
-  status: TradeStatus;
+  date: string;
+  status: 'WIN' | 'LOSS' | 'BE';
   notes?: string;
+  timeframe?: string;
+  entryTime?: string;
+  exitTime?: string;
+  lotSize?: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  riskPercent?: number;
+  setup?: string;
+  marketBias?: string;
+  liquidityType?: string;
+  fairValueGap?: boolean;
+  orderBlock?: boolean;
+  bos?: boolean;
+  choch?: boolean;
+  confidence?: number;
+  followedPlan?: boolean;
+  mistakes?: string[];
+  lessonsLearned?: string;
+  beforeScreenshot?: string;
+  afterScreenshot?: string;
+  chartScreenshot?: string;
 }
 
-export interface Goal {
-  id: string;
-  title: string;
-  description: string;
-  target: number;
-  current: number;
-  unit: string;
-  deadline: string;
-  category: "profit" | "discipline" | "learning" | "risk";
-}
-
-export interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  unlocked: boolean;
-  icon: string;
-}
-
-export interface MoodEntry {
-  id: string;
-  date: string;
-  mood: "great" | "good" | "neutral" | "bad" | "terrible";
-  confidence: number; // 0-100
-  discipline: number; // 0-100
-  notes: string;
-}
-
-export interface EquityPoint {
-  date: string;
-  equity: number;
+export interface AccountMetrics {
   balance: number;
-}
-
-export interface DailyPnl {
-  date: string;
-  pnl: number;
-  trades: number;
+  equity: number;
+  todayPnL: number;
+  monthlyPnL: number;
+  drawdown: number;
+  maxDrawdown: number;
+  winRate: number;
+  profitFactor: number;
+  avgWin: number;
+  avgLoss: number;
+  expectancy: number;
+  bestSetup: string;
+  disciplineScore: number;
 }

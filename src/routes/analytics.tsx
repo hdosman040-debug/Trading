@@ -1,180 +1,95 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import React from 'react';
+import { createFileRoute } from '@tanstack/react-router';
 
-import { ChartCard } from "@/components/common/chart-card";
-import { PageHeader } from "@/components/common/page-header";
-import { CalendarHeatmap } from "@/components/charts/calendar-heatmap";
-import { MOCK_EQUITY, groupBy } from "@/data/mock";
-import { useTrades } from "@/hooks/use-trades";
-
-export const Route = createFileRoute("/analytics")({
-  head: () => ({
-    meta: [
-      { title: "Analytics — Fortex Journal" },
-      { name: "description", content: "Deep-dive analytics into your trading performance." },
-    ],
-  }),
-  component: AnalyticsPage,
-});
-
-const tooltipStyle = {
-  background: "var(--color-popover)",
-  border: "1px solid var(--color-border)",
-  borderRadius: 12,
-  fontSize: 12,
-};
-
-function AnalyticsPage() {
-  const { trades } = useTrades();
-  const closed = trades.filter((t) => t.status !== "OPEN");
-
-  const wins = closed.filter((t) => t.status === "WIN").length;
-  const losses = closed.filter((t) => t.status === "LOSS").length;
-  const be = closed.filter((t) => t.status === "BREAKEVEN").length;
-
-  const winRateData = [
-    { name: "Wins", value: wins, color: "var(--color-success)" },
-    { name: "Losses", value: losses, color: "var(--color-danger)" },
-    { name: "BE", value: be, color: "var(--color-muted-foreground)" },
+function Analytics() {
+  const stats = [
+    { label: 'Win Rate', value: '68.4%', detail: '38W - 18L', color: 'text-emerald-400' },
+    { label: 'Profit Factor', value: '2.45', detail: 'Optimal Ratio', color: 'text-blue-400' },
+    { label: 'Expectancy', value: '$358.50', detail: 'Per Execution', color: 'text-amber-400' },
+    { label: 'Plan Adherence', value: '92%', detail: 'ICT Rules Followed', color: 'text-purple-400' },
   ];
 
-  const byPair = useMemo(() => groupBy(closed, (t) => t.pair), [closed]);
-  const bySession = useMemo(() => groupBy(closed, (t) => t.session), [closed]);
-  const byStrategy = useMemo(() => groupBy(closed, (t) => t.strategy), [closed]);
-
-  const byMonth = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const t of closed) {
-      const key = t.date.slice(0, 7);
-      map.set(key, (map.get(key) ?? 0) + t.profit);
-    }
-    return Array.from(map, ([name, profit]) => ({ name, profit })).sort((a, b) => a.name.localeCompare(b.name));
-  }, [closed]);
+  const setups = [
+    { name: 'Silver Bullet', trades: 24, winRate: '75%', pnl: '+$4,250' },
+    { name: 'Judas Swing + FVG', trades: 18, winRate: '66%', pnl: '+$2,800' },
+    { name: 'HTF Liquidity Sweep', trades: 14, winRate: '57%', pnl: '+$1,120' },
+  ];
 
   return (
-    <>
-      <PageHeader title="Analytics" description="Explore your performance from every angle." />
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <ChartCard title="Equity Curve" description="Cumulative equity">
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={MOCK_EQUITY} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-              <XAxis dataKey="date" tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} tickFormatter={(d: string) => d.slice(5)} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} width={60} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Line type="monotone" dataKey="equity" stroke="var(--color-primary)" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard title="Balance Curve" description="Account balance">
-          <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={MOCK_EQUITY} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-              <defs>
-                <linearGradient id="balFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--color-accent)" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="var(--color-accent)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-              <XAxis dataKey="date" tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} tickFormatter={(d: string) => d.slice(5)} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} width={60} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Area type="monotone" dataKey="balance" stroke="var(--color-accent)" strokeWidth={2} fill="url(#balFill)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard title="Win Rate" description={`${wins}W · ${losses}L · ${be}BE`}>
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie data={winRateData} dataKey="value" cx="50%" cy="50%" innerRadius={65} outerRadius={95} paddingAngle={2}>
-                {winRateData.map((d, i) => (
-                  <Cell key={i} fill={d.color} />
-                ))}
-              </Pie>
-              <Tooltip contentStyle={tooltipStyle} />
-            </PieChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard title="Monthly Profit" description="Net P&L per month">
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={byMonth} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-              <XAxis dataKey="name" tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} width={60} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="profit" radius={[6, 6, 0, 0]}>
-                {byMonth.map((d, i) => (
-                  <Cell key={i} fill={d.profit >= 0 ? "var(--color-success)" : "var(--color-danger)"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard title="Performance by Pair" description="Net profit">
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={byPair} layout="vertical" margin={{ top: 5, right: 10, left: 20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
-              <XAxis type="number" tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="name" tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} width={70} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="profit" radius={[0, 6, 6, 0]}>
-                {byPair.map((d, i) => (
-                  <Cell key={i} fill={d.profit >= 0 ? "var(--color-primary)" : "var(--color-danger)"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard title="Session Performance" description="Net profit">
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={bySession} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-              <XAxis dataKey="name" tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} width={60} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="profit" radius={[6, 6, 0, 0]} fill="var(--color-accent)" />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard title="Strategy Performance" description="Net profit">
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={byStrategy} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
-              <XAxis dataKey="name" tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "var(--color-muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} width={60} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="profit" radius={[6, 6, 0, 0]} fill="var(--color-primary)" />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        <ChartCard title="Daily Heatmap" description="Last 60 days">
-          <CalendarHeatmap />
-        </ChartCard>
+    <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto text-slate-100">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-800 pb-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Trading Performance Analytics</h1>
+          <p className="text-sm text-slate-400">Quantitative metric breakdown for tracked executions</p>
+        </div>
+        <div className="flex gap-2">
+          <span className="bg-slate-800 border border-slate-700 text-xs px-3 py-1.5 rounded-lg text-slate-300">
+            Asset: NAS100 & USDJPY
+          </span>
+          <span className="bg-blue-600/20 border border-blue-500/30 text-xs px-3 py-1.5 rounded-lg text-blue-400 font-medium">
+            Timezone: NY EST
+          </span>
+        </div>
       </div>
-    </>
+
+      {/* Primary Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {stats.map((stat) => (
+          <div key={stat.label} className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-sm">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{stat.label}</span>
+            <div className={`text-2xl font-extrabold mt-1 ${stat.color}`}>{stat.value}</div>
+            <span className="text-[11px] text-slate-500 font-mono mt-0.5 block">{stat.detail}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Equity Performance Chart */}
+      <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-bold text-slate-200">Equity Growth Curve</h2>
+          <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">+18.4% Cumulative</span>
+        </div>
+        <div className="h-44 w-full flex items-end gap-2 pt-6 pb-2 px-2 border-b border-slate-800/80">
+          {[35, 42, 38, 55, 62, 58, 70, 78, 74, 88, 95, 100].map((height, i) => (
+            <div key={i} className="flex-1 bg-slate-800/60 hover:bg-blue-600/30 rounded-t transition-all group relative h-full flex items-end">
+              <div 
+                className="w-full bg-gradient-to-t from-blue-600 to-indigo-500 rounded-t transition-all" 
+                style={{ height: `${height}%` }}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-between text-[11px] text-slate-500 font-mono">
+          <span>Session Start</span>
+          <span>Mid Period</span>
+          <span>Current</span>
+        </div>
+      </div>
+
+      {/* Setup Breakdown */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-slate-800 font-bold text-sm text-slate-200">
+          Model & Setup Breakdown
+        </div>
+        <div className="divide-y divide-slate-800/60 text-xs">
+          {setups.map((setup) => (
+            <div key={setup.name} className="p-4 flex items-center justify-between hover:bg-slate-800/40 transition-colors">
+              <div>
+                <div className="font-semibold text-slate-200">{setup.name}</div>
+                <div className="text-slate-500 text-[11px]">{setup.trades} Sample Executions</div>
+              </div>
+              <div className="text-right">
+                <div className="font-bold text-emerald-400">{setup.pnl}</div>
+                <div className="text-slate-400 text-[11px]">{setup.winRate} Win Rate</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
+
+export const Route = createFileRoute('/analytics')({
+  component: Analytics,
+});

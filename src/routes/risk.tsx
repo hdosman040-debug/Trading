@@ -1,173 +1,138 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Calculator, Scale, Coins, Ruler } from "lucide-react";
+import React, { useState } from 'react';
+import { createFileRoute } from '@tanstack/react-router';
+import { ShieldAlert, Calculator } from 'lucide-react';
 
-import { PageHeader } from "@/components/common/page-header";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { formatCurrency, formatNumber } from "@/lib/format";
-import type { LucideIcon } from "lucide-react";
-
-export const Route = createFileRoute("/risk")({
-  head: () => ({
-    meta: [
-      { title: "Risk Calculator — Fortex Journal" },
-      { name: "description", content: "Risk, lot size, pip, and position calculators for forex traders." },
-    ],
-  }),
-  component: RiskPage,
+export const Route = createFileRoute('/risk')({
+  component: Risk,
 });
 
-function RiskPage() {
-  return (
-    <>
-      <PageHeader title="Risk Calculator" description="Plan every trade before you take it." />
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <RiskAmountCard />
-        <LotSizeCard />
-        <PipValueCard />
-        <PositionSizeCard />
-      </div>
-    </>
-  );
-}
+export default function Risk() {
+  const [accountBalance, setAccountBalance] = useState<number>(100000);
+  const [riskPercent, setRiskPercent] = useState<number>(1.0);
+  const [stopLossPips, setStopLossPips] = useState<number>(15);
+  const [selectedPair, setSelectedPair] = useState<'NAS100' | 'US30' | 'EUR/USD'>('NAS100');
 
-function CalcCard({
-  title,
-  icon: Icon,
-  children,
-}: {
-  title: string;
-  icon: LucideIcon;
-  children: React.ReactNode;
-}) {
+  const riskAmount = (accountBalance * riskPercent) / 100;
+
+  const calculatePositionSize = () => {
+    if (stopLossPips <= 0) return 0;
+    if (selectedPair === 'EUR/USD') {
+      return (riskAmount / (stopLossPips * 10)).toFixed(2);
+    } else {
+      return (riskAmount / stopLossPips).toFixed(2);
+    }
+  };
+
   return (
-    <div className="glass rounded-2xl p-5">
-      <div className="mb-4 flex items-center gap-2">
-        <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
-          <Icon className="h-4 w-4" />
-        </div>
-        <h3 className="text-sm font-semibold">{title}</h3>
+    <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto text-slate-100 bg-slate-950 min-h-screen">
+      <div className="border-b border-slate-800 pb-4">
+        <h1 className="text-2xl font-bold text-white tracking-tight">Prop Firm Risk Manager</h1>
+        <p className="text-xs text-slate-400">Position size & drawdown control for NAS100, US30 & EUR/USD</p>
       </div>
-      {children}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Position Size Calculator */}
+        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4">
+          <div className="flex items-center space-x-2">
+            <Calculator className="w-5 h-5 text-indigo-400" />
+            <h2 className="font-bold text-white text-base">Position Size Calculator</h2>
+          </div>
+
+          <div className="space-y-3 text-xs">
+            <div>
+              <label className="text-slate-400 block mb-1 font-medium">Select Instrument</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['NAS100', 'US30', 'EUR/USD'] as const).map((pair) => (
+                  <button
+                    key={pair}
+                    onClick={() => setSelectedPair(pair)}
+                    className={`p-2 rounded-lg font-bold transition text-xs ${
+                      selectedPair === pair 
+                        ? 'bg-indigo-600 text-white' 
+                        : 'bg-slate-950 text-slate-400 border border-slate-800'
+                    }`}
+                  >
+                    {pair}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-slate-400 block mb-1 font-medium">Account Balance ($)</label>
+              <input 
+                type="number" 
+                value={accountBalance} 
+                onChange={(e) => setAccountBalance(Number(e.target.value))}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-semibold focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="text-slate-400 block mb-1 font-medium">Risk Percentage (%)</label>
+              <input 
+                type="number" 
+                step="0.1" 
+                value={riskPercent} 
+                onChange={(e) => setRiskPercent(Number(e.target.value))}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-semibold focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+
+            <div>
+              <label className="text-slate-400 block mb-1 font-medium">
+                Stop Loss ({selectedPair === 'EUR/USD' ? 'Pips' : 'Points'})
+              </label>
+              <input 
+                type="number" 
+                value={stopLossPips} 
+                onChange={(e) => setStopLossPips(Number(e.target.value))}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-semibold focus:outline-none focus:border-indigo-500"
+              />
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-800/80 bg-indigo-950/30 p-4 rounded-xl border border-indigo-900/40 text-center space-y-1">
+            <span className="text-xs text-indigo-300 font-semibold uppercase tracking-wider">Recommended Lot Size</span>
+            <div className="text-3xl font-extrabold text-white">{calculatePositionSize()} Lots</div>
+            <span className="text-[11px] text-slate-400 block">Risking ${riskAmount.toLocaleString()} ({riskPercent}%)</span>
+          </div>
+        </div>
+
+        {/* Prop Firm Drawdown Guard */}
+        <div className="p-5 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-4">
+          <div className="flex items-center space-x-2">
+            <ShieldAlert className="w-5 h-5 text-amber-400" />
+            <h2 className="font-bold text-white text-base">Prop Firm Exposure Rules</h2>
+          </div>
+
+          <div className="space-y-3 text-xs">
+            <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/60 flex justify-between items-center">
+              <div>
+                <span className="font-bold text-white block">Max Daily Loss Limit</span>
+                <span className="text-[11px] text-slate-400">Hard stop at 4.0% daily equity loss</span>
+              </div>
+              <span className="font-bold text-rose-400 text-sm">$4,000.00</span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/60 flex justify-between items-center">
+              <div>
+                <span className="font-bold text-white block">Max Overall Drawdown</span>
+                <span className="text-[11px] text-slate-400">Trailing maximum threshold (8.0%)</span>
+              </div>
+              <span className="font-bold text-amber-400 text-sm">$8,000.00</span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800/60 flex justify-between items-center">
+              <div>
+                <span className="font-bold text-white block">Max Active Trades</span>
+                <span className="text-[11px] text-slate-400">Concurrent open exposure limit</span>
+              </div>
+              <span className="font-bold text-indigo-400 text-sm">2 Trades</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-  );
-}
-
-function Result({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="mt-4 rounded-xl gradient-primary p-4 text-white shadow-[var(--shadow-glow)]">
-      <div className="text-xs uppercase tracking-wider opacity-80">{label}</div>
-      <div className="mt-1 text-2xl font-bold tabular-nums">{value}</div>
-    </div>
-  );
-}
-
-function RiskAmountCard() {
-  const [balance, setBalance] = useState(10000);
-  const [risk, setRisk] = useState(1);
-  const amount = balance * (risk / 100);
-  return (
-    <CalcCard title="Risk Amount" icon={Calculator}>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label className="text-xs">Account Balance ($)</Label>
-          <Input type="number" value={balance} onChange={(e) => setBalance(+e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Risk %</Label>
-          <Input type="number" step="0.1" value={risk} onChange={(e) => setRisk(+e.target.value)} />
-        </div>
-      </div>
-      <Result label="Risk per Trade" value={formatCurrency(amount)} />
-    </CalcCard>
-  );
-}
-
-function LotSizeCard() {
-  const [risk, setRisk] = useState(100);
-  const [stop, setStop] = useState(20);
-  const [pipValue, setPipValue] = useState(10);
-  const lots = stop > 0 && pipValue > 0 ? risk / (stop * pipValue) : 0;
-  return (
-    <CalcCard title="Lot Size" icon={Scale}>
-      <div className="grid grid-cols-3 gap-3">
-        <div className="space-y-1.5">
-          <Label className="text-xs">Risk ($)</Label>
-          <Input type="number" value={risk} onChange={(e) => setRisk(+e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Stop (pips)</Label>
-          <Input type="number" value={stop} onChange={(e) => setStop(+e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Pip Value</Label>
-          <Input type="number" value={pipValue} onChange={(e) => setPipValue(+e.target.value)} />
-        </div>
-      </div>
-      <Result label="Lot Size" value={formatNumber(lots, 2)} />
-    </CalcCard>
-  );
-}
-
-function PipValueCard() {
-  const [lots, setLots] = useState(1);
-  const [contract, setContract] = useState(100000);
-  const [pipDecimal, setPipDecimal] = useState(0.0001);
-  const value = lots * contract * pipDecimal;
-  return (
-    <CalcCard title="Pip Value" icon={Ruler}>
-      <div className="grid grid-cols-3 gap-3">
-        <div className="space-y-1.5">
-          <Label className="text-xs">Lots</Label>
-          <Input type="number" step="0.01" value={lots} onChange={(e) => setLots(+e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Contract</Label>
-          <Input type="number" value={contract} onChange={(e) => setContract(+e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Pip (decimal)</Label>
-          <Input type="number" step="0.0001" value={pipDecimal} onChange={(e) => setPipDecimal(+e.target.value)} />
-        </div>
-      </div>
-      <Result label="Pip Value" value={formatCurrency(value)} />
-    </CalcCard>
-  );
-}
-
-function PositionSizeCard() {
-  const [balance, setBalance] = useState(10000);
-  const [risk, setRisk] = useState(2);
-  const [stopPips, setStopPips] = useState(25);
-  const [pipValue, setPipValue] = useState(10);
-  const riskAmt = balance * (risk / 100);
-  const size = stopPips > 0 && pipValue > 0 ? riskAmt / (stopPips * pipValue) : 0;
-  return (
-    <CalcCard title="Position Size" icon={Coins}>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label className="text-xs">Balance ($)</Label>
-          <Input type="number" value={balance} onChange={(e) => setBalance(+e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Risk %</Label>
-          <Input type="number" step="0.1" value={risk} onChange={(e) => setRisk(+e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Stop (pips)</Label>
-          <Input type="number" value={stopPips} onChange={(e) => setStopPips(+e.target.value)} />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs">Pip Value</Label>
-          <Input type="number" value={pipValue} onChange={(e) => setPipValue(+e.target.value)} />
-        </div>
-      </div>
-      <Result label="Position Size (lots)" value={formatNumber(size, 2)} />
-      <Button variant="ghost" size="sm" className="mt-2 w-full text-xs text-muted-foreground">
-        Risk amount: {formatCurrency(riskAmt)}
-      </Button>
-    </CalcCard>
   );
 }

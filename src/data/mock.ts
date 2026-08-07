@@ -1,218 +1,167 @@
-import type {
-  Achievement,
-  DailyPnl,
-  EquityPoint,
-  Goal,
-  MoodEntry,
-  Trade,
-} from "@/types";
+import { Trade, AccountMetrics } from '../types';
 
-const PAIRS = ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "XAU/USD", "GBP/JPY", "EUR/JPY"];
-const STRATEGIES = ["Breakout", "Trend Follow", "Reversal", "Range", "News", "SMC"];
-const SESSIONS = ["London", "New York", "Asia", "Sydney"] as const;
+export const mockAccountMetrics: AccountMetrics = {
+  balance: 104250.00,
+  equity: 105120.00,
+  todayPnL: 1450.00,
+  monthlyPnL: 4250.00,
+  drawdown: 1.2,
+  maxDrawdown: 3.5,
+  winRate: 68.5,
+  profitFactor: 2.85,
+  avgWin: 620.00,
+  avgLoss: 210.00,
+  expectancy: 358.50,
+  bestSetup: 'Silver Bullet',
+  disciplineScore: 92,
+};
 
-// Deterministic PRNG so mock data is stable across renders.
-function seeded(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  };
-}
-const rand = seeded(42);
-const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(rand() * arr.length)]!;
+export const MOCK_METRICS = mockAccountMetrics;
 
-function makeTrades(n: number): Trade[] {
-  const trades: Trade[] = [];
-  const now = Date.now();
-  for (let i = 0; i < n; i++) {
-    const direction = rand() > 0.5 ? "LONG" : "SHORT";
-    const rr = +(rand() * 4 + 0.5).toFixed(2);
-    const risk = +(50 + rand() * 200).toFixed(2);
-    const isWin = rand() > 0.42;
-    const isBE = !isWin && rand() > 0.9;
-    const profit = isBE ? 0 : isWin ? +(risk * rr).toFixed(2) : -risk;
-    const entry = +(1 + rand() * 200).toFixed(4);
-    const exit = +(entry + (rand() - 0.5) * 2).toFixed(4);
-    trades.push({
-      id: `t-${i + 1}`,
-      pair: pick(PAIRS),
-      direction,
-      entry,
-      exit,
-      risk,
-      rr,
-      profit,
-      session: pick(SESSIONS),
-      strategy: pick(STRATEGIES),
-      date: new Date(now - i * 1000 * 60 * 60 * (6 + rand() * 24)).toISOString(),
-      status: isBE ? "BREAKEVEN" : isWin ? "WIN" : "LOSS",
-      notes: rand() > 0.7 ? "Clean setup on 15m, confluence with H1 zone." : undefined,
-    });
+export const mockTrades: Trade[] = [
+  {
+    id: 'tr-001',
+    pair: 'NAS100',
+    direction: 'LONG',
+    entry: 19850.5,
+    exit: 19980.0,
+    risk: 250,
+    rr: 3.2,
+    profit: 800,
+    session: 'NY Open',
+    strategy: 'Silver Bullet',
+    date: '2026-08-04',
+    status: 'WIN',
+    notes: 'Swept London low during NY 10 AM Silver Bullet window into 15m bullish FVG.',
+    timeframe: '5m',
+    entryTime: '10:05 NY',
+    exitTime: '10:42 NY',
+    lotSize: 2.5,
+    stopLoss: 19810.0,
+    takeProfit: 19980.0,
+    riskPercent: 0.5,
+    setup: 'Silver Bullet',
+    marketBias: 'Bullish',
+    liquidityType: 'SSL',
+    fairValueGap: true,
+    orderBlock: true,
+    bos: true,
+    confidence: 5,
+    followedPlan: true,
+    mistakes: [],
+    lessonsLearned: 'Patience for the 10:00 AM NY Silver Bullet window yielded high R:R.'
+  },
+  {
+    id: 'tr-002',
+    pair: 'EUR/USD',
+    direction: 'SHORT',
+    entry: 1.0920,
+    exit: 1.0885,
+    risk: 200,
+    rr: 2.5,
+    profit: 500,
+    session: 'London',
+    strategy: 'Judas Swing',
+    date: '2026-08-03',
+    status: 'WIN',
+    notes: 'Judas swing at London open expanding into Asian BSL before displacement lower.',
+    timeframe: '15m',
+    entryTime: '03:15 NY',
+    exitTime: '05:30 NY',
+    lotSize: 5.0,
+    stopLoss: 1.0934,
+    takeProfit: 1.0885,
+    riskPercent: 0.5,
+    setup: 'Judas Swing',
+    marketBias: 'Bearish',
+    liquidityType: 'BSL',
+    orderBlock: true,
+    choch: true,
+    confidence: 4,
+    followedPlan: true,
+    mistakes: [],
+    lessonsLearned: 'Classic London Judas raid into HTF supply.'
+  },
+  {
+    id: 'tr-003',
+    pair: 'US30',
+    direction: 'SHORT',
+    entry: 39100,
+    exit: 39180,
+    risk: 300,
+    rr: -1.0,
+    profit: -300,
+    session: 'NY PM',
+    strategy: 'Order Block',
+    date: '2026-08-01',
+    status: 'LOSS',
+    notes: 'Took trade right before high-impact economic news release.',
+    timeframe: '1m',
+    entryTime: '14:10 NY',
+    exitTime: '14:15 NY',
+    lotSize: 1.5,
+    stopLoss: 39180,
+    takeProfit: 38900,
+    riskPercent: 0.75,
+    setup: 'Order Block',
+    marketBias: 'Bearish',
+    confidence: 2,
+    followedPlan: false,
+    mistakes: ['Traded ahead of news folder release'],
+    lessonsLearned: 'Always close exposure 15 minutes prior to major economic releases.'
   }
-  return trades;
-}
-
-export const MOCK_TRADES: Trade[] = makeTrades(120);
-
-export const MOCK_EQUITY: EquityPoint[] = (() => {
-  const out: EquityPoint[] = [];
-  let eq = 10000;
-  let bal = 10000;
-  const now = Date.now();
-  for (let i = 90; i >= 0; i--) {
-    const change = (rand() - 0.4) * 300;
-    eq += change;
-    bal += change * 0.9;
-    out.push({
-      date: new Date(now - i * 24 * 3600 * 1000).toISOString().slice(0, 10),
-      equity: +eq.toFixed(2),
-      balance: +bal.toFixed(2),
-    });
-  }
-  return out;
-})();
-
-export const MOCK_DAILY_PNL: DailyPnl[] = (() => {
-  const out: DailyPnl[] = [];
-  const now = Date.now();
-  for (let i = 60; i >= 0; i--) {
-    out.push({
-      date: new Date(now - i * 24 * 3600 * 1000).toISOString().slice(0, 10),
-      pnl: +((rand() - 0.45) * 800).toFixed(2),
-      trades: Math.floor(rand() * 8),
-    });
-  }
-  return out;
-})();
-
-export const MOCK_GOALS: Goal[] = [
-  {
-    id: "g1",
-    title: "Reach $15,000 balance",
-    description: "Grow account by 50% through disciplined trading.",
-    target: 15000,
-    current: 12480,
-    unit: "USD",
-    deadline: "2026-12-31",
-    category: "profit",
-  },
-  {
-    id: "g2",
-    title: "Maintain 60% win rate",
-    description: "Focus on high-quality A+ setups only.",
-    target: 60,
-    current: 54,
-    unit: "%",
-    deadline: "2026-09-30",
-    category: "discipline",
-  },
-  {
-    id: "g3",
-    title: "Journal 100 trades",
-    description: "Log every trade with screenshots and notes.",
-    target: 100,
-    current: 72,
-    unit: "trades",
-    deadline: "2026-08-15",
-    category: "learning",
-  },
-  {
-    id: "g4",
-    title: "Keep max drawdown under 8%",
-    description: "Cap risk per trade at 1% and daily loss at 3%.",
-    target: 8,
-    current: 5.2,
-    unit: "%",
-    deadline: "2026-12-31",
-    category: "risk",
-  },
 ];
 
-export const MOCK_ACHIEVEMENTS: Achievement[] = [
-  { id: "a1", title: "First Trade", description: "Logged your first trade", unlocked: true, icon: "trophy" },
-  { id: "a2", title: "10 Wins Streak", description: "10 consecutive wins", unlocked: true, icon: "flame" },
-  { id: "a3", title: "Risk Master", description: "30 days under 1% risk", unlocked: true, icon: "shield" },
-  { id: "a4", title: "Century Club", description: "100 trades journaled", unlocked: false, icon: "target" },
-  { id: "a5", title: "Zen Trader", description: "30 days of mood tracking", unlocked: false, icon: "sparkles" },
-  { id: "a6", title: "Profit Hunter", description: "$5,000 total profit", unlocked: false, icon: "trending-up" },
+export const MOCK_TRADES = mockTrades;
+
+export const MOCK_EQUITY = [
+  { date: '2026-07-01', balance: 100000 },
+  { date: '2026-07-08', balance: 101200 },
+  { date: '2026-07-15', balance: 100800 },
+  { date: '2026-07-22', balance: 102500 },
+  { date: '2026-07-29', balance: 103200 },
+  { date: '2026-08-05', balance: 104250 },
 ];
 
-export const MOCK_MOODS: MoodEntry[] = (() => {
-  const out: MoodEntry[] = [];
-  const moods: MoodEntry["mood"][] = ["great", "good", "neutral", "bad", "terrible"];
-  const now = Date.now();
-  for (let i = 0; i < 14; i++) {
-    out.push({
-      id: `m${i}`,
-      date: new Date(now - i * 24 * 3600 * 1000).toISOString().slice(0, 10),
-      mood: moods[Math.floor(rand() * moods.length)]!,
-      confidence: Math.floor(50 + rand() * 50),
-      discipline: Math.floor(50 + rand() * 50),
-      notes: i === 0 ? "Great London session. Stuck to my plan." : "",
-    });
-  }
-  return out;
-})();
+export const MOCK_MOODS = [
+  { date: '2026-08-01', mood: 'disciplined', rating: 4, notes: 'Followed model parameters' },
+  { date: '2026-08-03', mood: 'focused', rating: 5, notes: 'Clean execution during Silver Bullet' },
+  { date: '2026-08-04', mood: 'patient', rating: 5, notes: 'Waited for liquidity sweep' },
+];
 
-// --- Aggregates -----------------------------------------------------------
+export const MOCK_GOALS = [
+  { id: 'g1', title: 'Maintain Risk <= 1% per trade', current: 100, target: 100, category: 'Risk' },
+  { id: 'g2', title: 'Target 70% Win Rate on Silver Bullet', current: 68.5, target: 70, category: 'Strategy' },
+  { id: 'g3', title: 'Execute only NAS100, US30, EUR/USD', current: 100, target: 100, category: 'Discipline' },
+];
 
-export function computeStats(trades: Trade[]) {
-  const closed = trades.filter((t) => t.status !== "OPEN");
-  const wins = closed.filter((t) => t.status === "WIN");
-  const losses = closed.filter((t) => t.status === "LOSS");
-  const grossWin = wins.reduce((s, t) => s + t.profit, 0);
-  const grossLoss = Math.abs(losses.reduce((s, t) => s + t.profit, 0));
-  const totalProfit = closed.reduce((s, t) => s + t.profit, 0);
-  const winRate = closed.length ? (wins.length / closed.length) * 100 : 0;
-  const avgRR = closed.length ? closed.reduce((s, t) => s + t.rr, 0) / closed.length : 0;
-  const profitFactor = grossLoss > 0 ? grossWin / grossLoss : grossWin;
+export const MOCK_ACHIEVEMENTS = [
+  { id: 'a1', title: 'Zero FOMO Week', description: 'Traded strictly within defined killzones for 5 consecutive days', date: '2026-08-01' },
+  { id: 'a2', title: 'Silver Bullet Master', description: 'Achieved 3 consecutive Silver Bullet wins on NAS100', date: '2026-08-04' },
+];
 
-  // Streak
-  let streak = 0;
-  for (const t of closed) {
-    if (t.status === "WIN") streak++;
-    else break;
-  }
+export const MOCK_DAILY_PNL = [
+  { date: '2026-07-28', pnl: 350, profit: 350, amount: 350, count: 1, trades: 1 },
+  { date: '2026-07-29', pnl: -150, profit: -150, amount: -150, count: 1, trades: 1 },
+  { date: '2026-07-30', pnl: 620, profit: 620, amount: 620, count: 2, trades: 2 },
+  { date: '2026-07-31', pnl: 0, profit: 0, amount: 0, count: 0, trades: 0 },
+  { date: '2026-08-01', pnl: -300, profit: -300, amount: -300, count: 1, trades: 1 },
+  { date: '2026-08-02', pnl: 0, profit: 0, amount: 0, count: 0, trades: 0 },
+  { date: '2026-08-03', pnl: 500, profit: 500, amount: 500, count: 1, trades: 1 },
+  { date: '2026-08-04', pnl: 800, profit: 800, amount: 800, count: 1, trades: 1 },
+  { date: '2026-08-05', pnl: 450, profit: 450, amount: 450, count: 1, trades: 1 },
+];
 
-  const today = new Date().toISOString().slice(0, 10);
-  const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString().slice(0, 10);
-  const monthAgo = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().slice(0, 10);
-
-  const todayPnl = closed
-    .filter((t) => t.date.slice(0, 10) === today)
-    .reduce((s, t) => s + t.profit, 0);
-  const weekPnl = closed
-    .filter((t) => t.date.slice(0, 10) >= weekAgo)
-    .reduce((s, t) => s + t.profit, 0);
-  const monthPnl = closed
-    .filter((t) => t.date.slice(0, 10) >= monthAgo)
-    .reduce((s, t) => s + t.profit, 0);
-
-  return {
-    todayPnl,
-    weekPnl,
-    monthPnl,
-    totalTrades: trades.length,
-    winRate,
-    avgRR,
-    profitFactor,
-    streak,
-    totalProfit,
-  };
-}
-
-export function groupBy<T extends { profit: number }>(
-  arr: T[],
-  key: (t: T) => string,
-): { name: string; profit: number; trades: number }[] {
-  const map = new Map<string, { name: string; profit: number; trades: number }>();
-  for (const item of arr) {
-    const k = key(item);
-    const existing = map.get(k) ?? { name: k, profit: 0, trades: 0 };
-    existing.profit += item.profit;
-    existing.trades += 1;
-    map.set(k, existing);
-  }
-  return Array.from(map.values());
+export function groupBy<T, K extends string | number | symbol>(
+  array: T[],
+  getKey: (item: T) => K
+): Record<K, T[]> {
+  return array.reduce((acc, item) => {
+    const key = getKey(item);
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(item);
+    return acc;
+  }, {} as Record<K, T[]>);
 }
